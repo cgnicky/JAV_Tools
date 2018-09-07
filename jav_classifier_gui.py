@@ -6,7 +6,6 @@ import cfscrape
 import bs4
 import os
 import shutil
-import time
 
 
 class mainThread(QThread):
@@ -142,7 +141,6 @@ class AppWindow(QMainWindow):
 
         self.ui.srcEdit.setText("/DATA/Downloads/Media")
         self.ui.execBtn.clicked.connect(self.mainProcess)
-#        self.ui.execBtn.clicked.connect(self.mainProcess)
         self.ui.clearBtn.clicked.connect(self.clearOutput)
         self.ui.browseBtn.clicked.connect(self.selectFolder)
 
