@@ -6,6 +6,7 @@ import cfscrape
 import bs4
 import os
 import shutil
+import time
 
 
 class mainThread(QThread):
@@ -31,8 +32,9 @@ class mainThread(QThread):
                     return "Others"
             else:
                 link = \
-                soup.find("div", class_="video").find("a", {"title": lambda x: x and x.startswith(titleName)}).attrs[
-                    'href']
+                    soup.find("div", class_="video").find("a",
+                                                          {"title": lambda x: x and x.startswith(titleName)}).attrs[
+                        'href']
                 nextPage = scraper.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
                 soup2 = bs4.BeautifulSoup(nextPage.content, "html.parser")
                 actorName = soup2.find("span", class_="star").text
@@ -41,6 +43,12 @@ class mainThread(QThread):
             print("Failed to identify! Move to others...")
             self.result.emit("Failed to identify! Move to others...")
             return "Others"
+
+    def checkDuplicateFile(self, file):
+        if os.path.isfile(file):
+            return True
+        else:
+            return False
 
     def checkAndCreateDirectory(self, filePath):
         print("Checking Directory exists or not...")
@@ -78,31 +86,35 @@ class mainThread(QThread):
             return True
 
     def filenameFix(self, filename):
-        if filename.endswith("C"):
-            return filename[:len(filename) - 2]
+        if filename.endswith("a") or filename.endswith("A") or filename.endswith("B") or filename.endswith("b") or \
+                filename.endswith("C") or filename.endswith("c"):
+            if '-' in filename[len(filename) - 2:]:
+                return filename[:len(filename) - 2]
+            else:
+                return filename[:len(filename) - 1]
+        elif filename.startswith("FHD"):
+            return filename[4:len(filename)]
         else:
             return filename
 
-    def moveMp4(self, path, file, title):
-        print("Moving MP4 files...")
-        self.result.emit("Moving MP4 files...")
+    def moveFiles(self, path, file, title):
+        print("Moving video files...")
+        self.result.emit("Moving video files...")
         if "LUXU" in file:
-            dest = "{}/{}".format(path, "LUXU-Series")
+            title = "LUXU-Series"
+            dest = "{}/{}".format(path, title)
         elif "GANA" in file:
-            dest = "{}/{}".format(path, "GANA-Series")
+            title = "GANA-Series"
+            dest = "{}/{}".format(path, title)
         else:
             dest = "{}/{}".format(path, self.getActorName(title))
         src = "{}/{}".format(path, file)
         self.checkAndCreateDirectory(dest)
-        self.moveFile(src, dest)
-
-    def moveAvi(self, path, file, title):
-        print("Moving AVI files...")
-        self.result.emit("Moving AVI files...")
-        dest = "{}/{}".format(path, self.getActorName(title))
-        src = "{}/{}".format(path, file)
-        self.checkAndCreateDirectory(dest)
-        self.moveFile(src, dest)
+        if self.checkDuplicateFile("{}/{}/{}".format(path, title, file)) is False:
+            self.moveFile(src, dest)
+        else:
+            dest = "{}/{}".format(path, "duplicate")
+            self.moveFile(src, dest)
 
     def run(self):
         curPath = self.path
@@ -114,10 +126,8 @@ class mainThread(QThread):
                 try:
                     title, ext = file.split(".")
                     title = self.filenameFix(title)
-                    if file.endswith(".mp4"):
-                        self.moveMp4(curPath, file, title)
-                    elif file.endswith(".avi"):
-                        self.moveAvi(curPath, file, title)
+                    if file.endswith(".mp4") or file.endswith(".avi"):
+                        self.moveFiles(curPath, file, title)
                     else:
                         print("Extension not supported!")
                         self.result.emit("Extension not supported!")
@@ -141,6 +151,7 @@ class AppWindow(QMainWindow):
 
         self.ui.srcEdit.setText("/DATA/Downloads/Media")
         self.ui.execBtn.clicked.connect(self.mainProcess)
+        #        self.ui.execBtn.clicked.connect(self.mainProcess)
         self.ui.clearBtn.clicked.connect(self.clearOutput)
         self.ui.browseBtn.clicked.connect(self.selectFolder)
 
@@ -151,7 +162,8 @@ class AppWindow(QMainWindow):
         self.workerThread.start()
 
     def selectFolder(self):
-        self.ui.srcEdit.setText(QFileDialog.getExistingDirectory(None, 'Select a Folder', '/DATA/', QFileDialog.ShowDirsOnly))
+        self.ui.srcEdit.setText(
+            QFileDialog.getExistingDirectory(None, 'Select a Folder', '/DATA/', QFileDialog.ShowDirsOnly))
 
     def msgLogging(self, content):
         self.ui.msgBox.append(content)
