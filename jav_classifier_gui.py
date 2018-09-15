@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
 from PyQt5.QtCore import *
 from gui_style import Ui_MainWindow
 import cfscrape
@@ -30,10 +30,8 @@ class mainThread(QThread):
                     self.result.emit("Empty actor name! Move to others...")
                     return "Others"
             else:
-                link = \
-                    soup.find("div", class_="video").find("a",
-                                                          {"title": lambda x: x and x.startswith(titleName)}).attrs[
-                        'href']
+                link = soup.find("div", class_="video"). \
+                    find("a",{"title": lambda x: x and x.startswith(titleName)}).attrs['href']
                 nextPage = scraper.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
                 soup2 = bs4.BeautifulSoup(nextPage.content, "html.parser")
                 actorName = soup2.find("span", class_="star").text
@@ -136,8 +134,7 @@ class mainThread(QThread):
             else:
                 print("Invalid extension format!")
                 self.result.emit("Invalid extension format!")
-        print("Process Successfully !!")
-        self.result.emit("Process Successfully !!")
+        self.result.emit("Process all completed !")
 
 
 class AppWindow(QMainWindow):
@@ -158,6 +155,12 @@ class AppWindow(QMainWindow):
         self.workerThread = mainThread(path)
         self.workerThread.result.connect(self.msgLogging)
         self.workerThread.start()
+        self.workerThread.finished.connect(self.done)
+        self.ui.execBtn.setEnabled(False)
+
+    def done(self):
+        self.ui.execBtn.setEnabled(True)
+        QMessageBox.information(self, "Done!", "Process Completed!")
 
     def selectFolder(self):
         self.ui.srcEdit.setText(
