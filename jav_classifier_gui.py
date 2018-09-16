@@ -31,7 +31,7 @@ class mainThread(QThread):
                     return "Others"
             else:
                 link = soup.find("div", class_="video"). \
-                    find("a",{"title": lambda x: x and x.startswith(titleName)}).attrs['href']
+                    find("a",{"title": lambda x: x and x.startswith(titleName.upper())}).attrs['href']
                 nextPage = scraper.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
                 soup2 = bs4.BeautifulSoup(nextPage.content, "html.parser")
                 actorName = soup2.find("span", class_="star").text
