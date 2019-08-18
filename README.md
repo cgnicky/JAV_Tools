@@ -1,5 +1,4 @@
-# jav_classifier_PyQt5
-JAV Tools
+# JAV Tools
 
 Main features:
 1. Classifier by label or actor
