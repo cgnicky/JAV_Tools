@@ -1,14 +1,11 @@
-import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QMessageBox
-from PyQt5.QtCore import *
-from gui_style import Ui_MainWindow
 import cfscrape
 import bs4
-import os
 import shutil
+from PyQt5.QtCore import *
+import os
 
 
-class mainThread(QThread):
+class JavClassifier(QThread):
     result = pyqtSignal(str)
 
     def __init__(self, path):
@@ -31,7 +28,7 @@ class mainThread(QThread):
                     return "Others"
             else:
                 link = soup.find("div", class_="video"). \
-                    find("a",{"title": lambda x: x and x.startswith(titleName.upper())}).attrs['href']
+                    find("a", {"title": lambda x: x and x.startswith(titleName.upper())}).attrs['href']
                 nextPage = scraper.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
                 soup2 = bs4.BeautifulSoup(nextPage.content, "html.parser")
                 actorName = soup2.find("span", class_="star").text
@@ -41,7 +38,7 @@ class mainThread(QThread):
             self.result.emit("Failed to identify! Move to others...")
             return "Others"
 
-    def checkDuplicateFile(self, file):
+    def check_existed_file(self, file):
         if os.path.isfile(file):
             return True
         else:
@@ -97,6 +94,7 @@ class mainThread(QThread):
     def moveFiles(self, path, file, title):
         print("Moving video files...")
         self.result.emit("Moving video files...")
+        actor_name = self.getActorName(title)
         if "LUXU" in file:
             title = "LUXU-Series"
             dest = "{}/{}".format(path, title)
@@ -104,13 +102,14 @@ class mainThread(QThread):
             title = "GANA-Series"
             dest = "{}/{}".format(path, title)
         else:
-            dest = "{}/{}".format(path, self.getActorName(title))
+            dest = "{}/{}".format(path, actor_name)
         src = "{}/{}".format(path, file)
         self.checkAndCreateDirectory(dest)
-        if self.checkDuplicateFile("{}/{}/{}".format(path, title, file)) is False:
+        if self.check_existed_file("{}/{}/{}".format(path, actor_name, file)) is False:
             self.moveFile(src, dest)
         else:
-            dest = "{}/{}".format(path, "duplicate")
+            dest = "{}/{}".format(path, "Existed")
+            self.checkAndCreateDirectory(dest)
             self.moveFile(src, dest)
 
     def run(self):
@@ -135,45 +134,3 @@ class mainThread(QThread):
                 print("Invalid extension format!")
                 self.result.emit("Invalid extension format!")
         self.result.emit("Process all completed !")
-
-
-class AppWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.ui = Ui_MainWindow()
-        self.ui.setupUi(self)
-        self.setFixedSize(self.size())
-        self.show()
-
-        self.ui.srcEdit.setText("/DATA/Downloads/Media")
-        self.ui.execBtn.clicked.connect(self.mainProcess)
-        self.ui.clearBtn.clicked.connect(self.clearOutput)
-        self.ui.browseBtn.clicked.connect(self.selectFolder)
-
-    def mainProcess(self):
-        path = self.ui.srcEdit.text()
-        self.workerThread = mainThread(path)
-        self.workerThread.result.connect(self.msgLogging)
-        self.workerThread.start()
-        self.workerThread.finished.connect(self.done)
-        self.ui.execBtn.setEnabled(False)
-
-    def done(self):
-        self.ui.execBtn.setEnabled(True)
-        QMessageBox.information(self, "Done!", "Process Completed!")
-
-    def selectFolder(self):
-        self.ui.srcEdit.setText(
-            QFileDialog.getExistingDirectory(None, 'Select a Folder', '/DATA/', QFileDialog.ShowDirsOnly))
-
-    def msgLogging(self, content):
-        self.ui.msgBox.append(content)
-
-    def clearOutput(self):
-        self.ui.msgBox.clear()
-
-
-app = QApplication([])
-w = AppWindow()
-w.show()
-sys.exit(app.exec_())
