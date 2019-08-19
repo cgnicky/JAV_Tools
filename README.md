@@ -1,7 +1,7 @@
 # JAV Tools
 
 Main features:
-1. Classifier by label or actor
+1. Classify media files by actor
 2. Media record query from PostgreSQL
 3. Upload the downloaded local media files to online database
 
