@@ -20,7 +20,7 @@ class AppWindow(QTabWidget):
     # Jav Classifier
 
     def javClassifierTab(self):
-        self.ui.srcEdit.setText("/DATA/Downloads/Media")
+        self.ui.srcEdit.setText("D:\\Downloads\\Video\\tmp")
         self.ui.execBtn.clicked.connect(self.javClassifierMain)
         self.ui.clearBtn.clicked.connect(self.clearOutput)
         self.ui.browseBtn.clicked.connect(self.selectFolder)
@@ -152,7 +152,7 @@ class AppWindow(QTabWidget):
 def main():
     app = QApplication(sys.argv)
     ex = AppWindow()
-    ex.setCurrentIndex(2)  # Show the first tab at start
+    ex.setCurrentIndex(0)  # Show the first tab at start
     ex.show()
     sys.exit(app.exec_())
 

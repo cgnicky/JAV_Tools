@@ -1,4 +1,4 @@
-import cfscrape
+import cloudscraper
 import bs4
 import shutil
 from PyQt5.QtCore import *
@@ -13,8 +13,14 @@ class JavClassifier(QThread):
         self.path = path
 
     def getActorName(self, titleName):
-        scraper = cfscrape.create_scraper()
-
+        #scraper = cloudscraper.create_scraper()
+        scraper = cloudscraper.create_scraper(
+          interpreter='nodejs',
+          recaptcha={
+            'provider': 'anticaptcha',
+            'api_key': 'd4bd0005907a92ffc55915d516ecb4c3'
+          }
+        )
         response = scraper.get("http://www.javlibrary.com/en/vl_searchbyid.php?keyword={}".format(titleName))
         soup = bs4.BeautifulSoup(response.content, "html.parser")
         if self.validateSearchResult(soup) is True:
@@ -27,8 +33,10 @@ class JavClassifier(QThread):
                     self.result.emit("Empty actor name! Move to others...")
                     return "Others"
             else:
-                link = soup.find("div", class_="video"). \
-                    find("a", {"title": lambda x: x and x.startswith(titleName.upper())}).attrs['href']
+                links = soup.find_all("a", {"title": lambda x: x and x.startswith(titleName.upper())})
+                link = ""
+                for i in links:
+                    link = i.attrs['href']
                 nextPage = scraper.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
                 soup2 = bs4.BeautifulSoup(nextPage.content, "html.parser")
                 actorName = soup2.find("span", class_="star").text
