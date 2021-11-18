@@ -13,14 +13,7 @@ class JavClassifier(QThread):
         self.path = path
 
     def getActorName(self, titleName):
-        #scraper = cloudscraper.create_scraper()
-        scraper = cloudscraper.create_scraper(
-          interpreter='nodejs',
-          recaptcha={
-            'provider': 'anticaptcha',
-            'api_key': 'd4bd0005907a92ffc55915d516ecb4c3'
-          }
-        )
+        scraper = cloudscraper.create_scraper()
         response = scraper.get("http://www.javlibrary.com/en/vl_searchbyid.php?keyword={}".format(titleName))
         soup = bs4.BeautifulSoup(response.content, "html.parser")
         if self.validateSearchResult(soup) is True:
