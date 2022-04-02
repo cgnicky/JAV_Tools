@@ -5,11 +5,10 @@
 2. Media record query from PostgreSQL
 3. Upload the local media files to online database
 
-## Packages required in classifier:
-- cfscrpe (A simple Python module to bypass Cloudflare's anti-bot page) https://github.com/VeNoMouS/cloudscraper
-- bs4
+## Packages:
+`pip install -r requirements.txt`
 
-## Usage
+## To launch the application
 ```
-python JavTools.py
+python3 JavTools.py
 ```
