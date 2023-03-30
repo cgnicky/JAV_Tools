@@ -1,4 +1,5 @@
-cloudscraper
 bs4
 psycopg2-binary
+psycopg2
 cloudscraper
+PyQt5
