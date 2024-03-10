@@ -3,6 +3,7 @@ import bs4
 import shutil
 from PyQt5.QtCore import *
 import os
+import re
 
 
 class JavClassifier(QThread):
@@ -13,14 +14,14 @@ class JavClassifier(QThread):
         self.path = path
 
     def getActorName(self, titleName):
-        #scraper = cloudscraper.create_scraper()
-        scraper = cloudscraper.create_scraper(
-          interpreter='nodejs',
-          recaptcha={
-            'provider': 'anticaptcha',
-            'api_key': 'd4bd0005907a92ffc55915d516ecb4c3'
-          }
-        )
+        scraper = cloudscraper.create_scraper()
+        # scraper = cloudscraper.create_scraper(
+        #   interpreter='nodejs',
+        #   recaptcha={
+        #     'provider': 'anticaptcha',
+        #     'api_key': 'd4bd0005907a92ffc55915d516ecb4c3'
+        #   }
+        # )
         response = scraper.get("http://www.javlibrary.com/en/vl_searchbyid.php?keyword={}".format(titleName))
         soup = bs4.BeautifulSoup(response.content, "html.parser")
         if self.validateSearchResult(soup) is True:
@@ -88,14 +89,10 @@ class JavClassifier(QThread):
             return True
 
     def filenameFix(self, filename):
-        if filename.endswith("a") or filename.endswith("A") or filename.endswith("B") or filename.endswith("b") or \
-                filename.endswith("C") or filename.endswith("c"):
-            if '-' in filename[len(filename) - 2:]:
-                return filename[:len(filename) - 2]
-            else:
-                return filename[:len(filename) - 1]
-        elif filename.startswith("FHD"):
-            return filename[4:len(filename)]
+        pattern = r'^([A-Z]+-\d+).*'
+        match = re.match(pattern, filename)
+        if match:
+            return match.group(1)
         else:
             return filename
 
@@ -105,18 +102,18 @@ class JavClassifier(QThread):
         actor_name = self.getActorName(title)
         if "LUXU" in file:
             title = "LUXU-Series"
-            dest = "{}/{}".format(path, title)
+            dest = "{}\{}".format(path, title)
         elif "GANA" in file:
             title = "GANA-Series"
-            dest = "{}/{}".format(path, title)
+            dest = "{}\{}".format(path, title)
         else:
-            dest = "{}/{}".format(path, actor_name)
-        src = "{}/{}".format(path, file)
+            dest = "{}\{}".format(path, actor_name)
+        src = "{}\{}".format(path, file)
         self.checkAndCreateDirectory(dest)
-        if self.check_existed_file("{}/{}/{}".format(path, actor_name, file)) is False:
+        if self.check_existed_file("{}\{}\{}".format(path, actor_name, file)) is False:
             self.moveFile(src, dest)
         else:
-            dest = "{}/{}".format(path, "Existed")
+            dest = "{}\{}".format(path, "Existed")
             self.checkAndCreateDirectory(dest)
             self.moveFile(src, dest)
 

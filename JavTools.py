@@ -12,7 +12,7 @@ class AppWindow(QTabWidget):
         self.ui = Ui_TabWidget()
         self.ui.setupUi(self)
         self.setFixedSize(self.size())
-        self.javClassifierTab()
+        self.javClassifierTab()  
         self.javQueryTab()
         self.javDBUpdaterTab()
         self.show()
@@ -35,7 +35,7 @@ class AppWindow(QTabWidget):
 
     def done(self):
         self.ui.execBtn.setEnabled(True)
-        QMessageBox.information(self, "Done!", "Process Completed!")
+        QMessageBox.information(self, "Message", "Process Completed!")
 
     def selectFolder(self):
         self.ui.srcEdit.setText(
