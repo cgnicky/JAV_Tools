@@ -1,9 +1,8 @@
 # JAV Tools
 
 ## Main features:
-1. Classify the media files by actor (label ?)
-2. Media record query from PostgreSQL
-3. Upload the local media files to online database
+1. Classify the media files by actor
+2. Store and query history in PostgreSQL (TODO)
 
 ## Packages:
 `pip install -r requirements.txt`
