@@ -1,9 +1,15 @@
-import cloudscraper
 import bs4
 import shutil
 from PyQt5.QtCore import *
 import os
 import re
+import time
+
+from CloudflareBypasser import CloudflareBypasser
+from DrissionPage import ChromiumPage
+
+
+PAUSE_TIME_SECOND = 1
 
 
 class JavClassifier(QThread):
@@ -14,10 +20,14 @@ class JavClassifier(QThread):
         self.path = path
 
     def getActorName(self, titleName):
-        scraper = cloudscraper.create_scraper()
+        driver = ChromiumPage()
 
-        response = scraper.get("http://www.javlibrary.com/en/vl_searchbyid.php?keyword={}".format(titleName))
-        soup = bs4.BeautifulSoup(response.content, "html.parser")
+        driver.get("http://www.javlibrary.com/en/vl_searchbyid.php?keyword={}".format(titleName))
+        
+        cf_bypasser = CloudflareBypasser(driver)
+        cf_bypasser.bypass()
+        
+        soup = bs4.BeautifulSoup(driver.html, "html.parser")
         if self.validateSearchResult(soup) is True:
             if not soup.find("div", class_="videos"):
                 if soup.find("span", class_="star"):
@@ -32,8 +42,12 @@ class JavClassifier(QThread):
                 link = ""
                 for i in links:
                     link = i.attrs['href']
-                nextPage = scraper.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
-                soup2 = bs4.BeautifulSoup(nextPage.content, "html.parser")
+                driver.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
+                
+                cf_bypasser = CloudflareBypasser(driver)
+                cf_bypasser.bypass()
+                
+                soup2 = bs4.BeautifulSoup(driver.html, "html.parser")
                 actorName = soup2.find("span", class_="star").text
                 return actorName
         else:
@@ -110,25 +124,32 @@ class JavClassifier(QThread):
             dest = "{}\{}".format(path, "Existed")
             self.checkAndCreateDirectory(dest)
             self.moveFile(src, dest)
+            
+    def avoid_rate_limit(self):
+        print(f"Pause for {PAUSE_TIME_SECOND}s to prevent rate limiter")
+        self.result.emit(f"Pause for {PAUSE_TIME_SECOND}s to prevent rate limiter")
+        time.sleep(PAUSE_TIME_SECOND)
 
     def run(self):
         curPath = self.path
         source = os.listdir(curPath)
-        for file in source:
-            print(file)
-            self.result.emit(file)
+        for file in source:            
+            print(f"Processing: [{file}] ...")
+            self.result.emit(f"Processing: [{file}] ...")
             if len(file.split(".")) <= 2:
                 try:
                     title, ext = file.split(".")
                     title = self.filenameFix(title)
                     if file.endswith(".mp4") or file.endswith(".avi"):
+                        self.avoid_rate_limit()
+                        
                         self.moveFiles(curPath, file, title)
                     else:
                         print("Extension not supported!")
                         self.result.emit("Extension not supported!")
                 except ValueError:
-                    print("Not a media file, skipped...")
-                    self.result.emit("Not a media file, skipped...")
+                    print("Not a media file, skipped!")
+                    self.result.emit("Not a media file, skipped!")
             else:
                 print("Invalid extension format!")
                 self.result.emit("Invalid extension format!")
