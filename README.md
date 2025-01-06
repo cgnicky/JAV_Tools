@@ -1,6 +1,6 @@
 # JAV Tools
 
-A Python-written JAV videos categorization application that detects label name and stored in the director with corresponding actor
+A Python-written JAV videos categorization application that detects label name and saved in the actor-named directories
 
 ## Packages:
 `pip install -r requirements.txt`
