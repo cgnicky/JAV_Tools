@@ -1,11 +1,26 @@
-# JAV Tools
+# JAV Title Categorizer
 
-A Python-written JAV videos categorization application that detects label name and saved in the actor-named directories
+## Overview
+This Python script organizes JAV title files into directories based on the actor's name. It scans a folder containing video files, extracts actor names from filenames, and moves them into corresponding directories for better organization. It requires to open a Chrome browser to manually bypass CF protection.
 
-## Packages:
-`pip install -r requirements.txt`
+## Features
+- Automatically detects actor names from filenames.
+- Moves files into folders named after actors.
+- Supports multiple actor names per file.
+- Handles various filename formats.
+- Logs errors for unidentified actors.
 
-## To launch the application
+## Installation
+### Requirements
+Ensure you have Python and Chrome browser installed on your system.
+
+### Dependencies
+Install the required dependencies using:
+```bash
+pip install -r requirements.txt
 ```
-python3 JavTools.py
+
+### Usage
+```
+python JAV_Tools.py
 ```
