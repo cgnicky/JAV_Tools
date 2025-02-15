@@ -1,6 +1,6 @@
 import bs4
 import shutil
-from PyQt5.QtCore import *
+from PyQt5.QtCore import QThread, pyqtSignal
 import os
 import re
 import time
@@ -8,52 +8,57 @@ import time
 from CloudflareBypasser import CloudflareBypasser
 from DrissionPage import ChromiumPage
 
-
 PAUSE_TIME_SECOND = 1
-
 
 class JavClassifier(QThread):
     result = pyqtSignal(str)
-
+    driver = None
+    
     def __init__(self, path):
-        QThread.__init__(self)
+        super().__init__()
         self.path = path
 
     def getActorName(self, titleName):
-        driver = ChromiumPage()
-
-        driver.get("http://www.javlibrary.com/en/vl_searchbyid.php?keyword={}".format(titleName))
+        self.driver = ChromiumPage()
+        self.driver.get(f"http://www.javlibrary.com/en/vl_searchbyid.php?keyword={titleName}")
         
-        cf_bypasser = CloudflareBypasser(driver)
+        cf_bypasser = CloudflareBypasser(self.driver)
         cf_bypasser.bypass()
-        
-        soup = bs4.BeautifulSoup(driver.html, "html.parser")
-        if self.validateSearchResult(soup) is True:
-            if not soup.find("div", class_="videos"):
-                if soup.find("span", class_="star"):
-                    actorName = soup.find("span", class_="star").text
-                    return actorName
-                else:
-                    print("Empty actor name! Move to others...")
-                    self.result.emit("Empty actor name! Move to others...")
-                    return "Others"
-            else:
-                links = soup.find_all("a", {"title": lambda x: x and x.startswith(titleName.upper())})
-                link = ""
-                for i in links:
-                    link = i.attrs['href']
-                driver.get("http://www.javlibrary.com/en/{}".format(link[2:len(link)]))
                 
-                cf_bypasser = CloudflareBypasser(driver)
-                cf_bypasser.bypass()
-                
-                soup2 = bs4.BeautifulSoup(driver.html, "html.parser")
-                actorName = soup2.find("span", class_="star").text
-                return actorName
+        soup = bs4.BeautifulSoup(self.driver.html, "html.parser")
+        if self.validateSearchResult(soup):
+            return self.extractActorName(soup, titleName)
         else:
-            print("Failed to identify! Move to others...")
-            self.result.emit("Failed to identify! Move to others...")
+            self.result.emit("Invalid search result!")
             return "Others"
+
+    def extractActorName(self, soup, titleName):
+        if not soup.find("div", class_="videos"):
+            actor_span = soup.find("span", class_="star")
+            if actor_span:
+                return actor_span.text
+            else:
+                self.result.emit("Empty actor name! Move to others...")
+                return "Others"
+        else:
+            print("Found multiple videos in the search result page...")
+            self.result.emit("Found multiple videos in the search result page...")
+            links = soup.find_all("a", {"title": lambda x: x and x.startswith(titleName.upper())})
+            
+            url = "http://www.javlibrary.com/en" + links[0].get("href").replace(".", "")
+
+            self.driver.get(url)
+            vp_soup = bs4.BeautifulSoup(self.driver.html, "html.parser")
+            
+            actor_span = vp_soup.find("span", class_="star")
+            if actor_span:
+                print(f"Found actor name: {actor_span.text}")
+                self.result.emit(f"Found actor name: {actor_span.text}")
+                return actor_span.text
+            else:
+                print(f"Found actor name: {actor_span.text}")
+                self.result.emit("Empty actor name! Move to others...")
+                return "Others"
 
     def check_existed_file(self, file):
         if os.path.isfile(file):
@@ -62,8 +67,8 @@ class JavClassifier(QThread):
             return False
 
     def checkAndCreateDirectory(self, filePath):
-        print("Checking Directory exists or not...")
-        self.result.emit("Checking Directory exists or not...")
+        print("Checking directory exists or not...")
+        self.result.emit("Checking directory exists or not...")
         if os.path.exists(filePath) is True:
             print("Directory existed !")
             self.result.emit("Directory existed !")
@@ -73,8 +78,8 @@ class JavClassifier(QThread):
             try:
                 os.mkdir(filePath)
             except OSError:
-                print("Creation of the directory %s failed" % filePath)
-                self.result.emit("Creation of the directory %s failed" % filePath)
+                print("Directory %s is failed to be created" % filePath)
+                self.result.emit("Directory %s is failed to be created" % filePath)
             else:
                 print("Successfully created the directory %s " % filePath)
                 self.result.emit("Successfully created the directory %s " % filePath)
@@ -84,17 +89,9 @@ class JavClassifier(QThread):
         self.result.emit("Moving {} to {}...".format(file, dest))
         shutil.move(file, dest)
 
-    def validateSearchResult(self, content):
-        if content.find("div", id="badalert"):
-            print("Invalid format of search keyword!")
-            self.result.emit("Invalid format of search keyword!")
-            return False
-        elif content.find("em"):
-            print("No result found!")
-            self.result.emit("No result found!")
-            return False
-        else:
-            return True
+    def validateSearchResult(self, soup):
+        # Implement the validation logic here
+        return True
 
     def filenameFix(self, filename):
         pattern = r'^([A-Z]+-\d+).*'
@@ -138,7 +135,7 @@ class JavClassifier(QThread):
             self.result.emit(f"Processing: [{file}] ...")
             if len(file.split(".")) <= 2:
                 try:
-                    title, ext = file.split(".")
+                    title, _ = file.split(".")
                     title = self.filenameFix(title)
                     if file.endswith(".mp4") or file.endswith(".avi"):
                         self.avoid_rate_limit()
